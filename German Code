@@ -5,6 +5,45 @@ from collections import Counter
 import sys
 import os
 
+# Sprachtexte mit Item-Namen
+texts = {
+    "de": {
+        "add_player": "Spieler hinzufügen",
+        "remove_player": "Spieler entfernen",
+        "edit_name": "Spielername Bearbeiten",
+        "edit_button": "Bearbeiten",
+        "new_name": "Neuer Spielername:",
+        "save": "Speichern",
+        "calculate": "Berechnen",
+        "reset": "Reset",
+        "result": "Optimale Verteilung:",
+        "items": {
+            "Ikone": ["Geringe uralte Ikone", "Normale uralte Ikone", "Große uralte Ikone", "Mächtige uralte Ikone"],
+            "Siegel": ["Geringes uraltes Siegel", "Normales uraltes Siegel", "Großes uraltes Siegel", "Mächtiges uraltes Siegel"],
+            "Kelch": ["Geringer uralter Kelch", "Normaler uralter Kelch", "Großer uralter Kelch", "Mächtiger uralter Kelch"],
+            "Krone": ["Geringe uralte Krone", "Normale uralte Krone", "Große uralte Krone", "Mächtige uralte Krone"]
+        }
+    },
+    "en": {
+        "add_player": "Add Player",
+        "remove_player": "Remove Player",
+        "edit_name": "Edit Player Name",
+        "edit_button": "Edit",
+        "new_name": "New Player Name:",
+        "save": "Save",
+        "calculate": "Calculate",
+        "reset": "Reset",
+        "result": "Optimal Distribution:",
+        "items": {
+            "Ikone": ["Minor Ancient Icon", "Normal Ancient Icon", "Large Ancient Icon", "Powerful Ancient Icon"],
+            "Siegel": ["Minor Ancient Seal", "Normal Ancient Seal", "Large Ancient Seal", "Powerful Ancient Seal"],
+            "Kelch": ["Minor Ancient Chalice", "Normal Ancient Chalice", "Large Ancient Chalice", "Powerful Ancient Chalice"],
+            "Krone": ["Minor Ancient Crown", "Normal Ancient Crown", "Large Ancient Crown", "Powerful Ancient Crown"]
+        }
+    }
+}
+
+
 # Kategorien mit Werten
 categories = {
     "Ikone": [("Geringe uralte Ikone", 450), ("Normale uralte Ikone", 900), ("Große uralte Ikone", 1350), ("Mächtige uralte Ikone", 1800)],
@@ -26,6 +65,49 @@ player_names = ["Spieler 1", "Spieler 2"]
 max_players = 6
 min_players = 2
 
+def update_categories():
+    """Aktualisiert die Kategorien und Item-Namen basierend auf der Sprache."""
+    global categories
+    categories = {
+        "Ikone": list(zip(texts["items"]["Ikone"], [450, 900, 1350, 1800])),
+        "Siegel": list(zip(texts["items"]["Siegel"], [900, 1800, 2700, 3600])),
+        "Kelch": list(zip(texts["items"]["Kelch"], [1200, 2400, 3600, 4800])),
+        "Krone": list(zip(texts["items"]["Krone"], [2400, 4800, 7200, 9600]))
+    }
+
+    # UI-Elemente aktualisieren
+    refresh_category_ui()
+
+def refresh_category_ui():
+    """Erneuert die Anzeige der Kategorien im UI."""
+    for widget in left_frame.winfo_children():
+        widget.destroy()  # Alte UI-Elemente entfernen
+
+    quantity_labels.clear()  # Labels für Mengen zurücksetzen
+
+    # Kategorien neu aufbauen
+    for i, (category, items) in enumerate(categories.items()):
+        frame = tk.LabelFrame(left_frame, text=category)
+        frame.pack(fill="x", padx=5, pady=5)
+
+        for j, (name, value) in enumerate(items):
+            item_frame = tk.Frame(frame)
+            item_frame.pack(anchor="w", pady=2)
+
+            tk.Label(item_frame, text=f"{name} (AP: {value}):", width=30, anchor="w").pack(side="left")
+            minus_button = ttk.Button(item_frame, text="-", command=lambda idx=len(quantity_labels): change_quantity(idx, -1))
+            minus_button.pack(side="left")
+
+            lbl = tk.Label(item_frame, text="0", width=5)
+            lbl.pack(side="left")
+            quantity_labels.append(lbl)
+
+            plus_button = ttk.Button(item_frame, text="+", command=lambda idx=len(quantity_labels)-1: change_quantity(idx, 1))
+            plus_button.pack(side="left")
+
+
+
+
 def get_resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):  # PyInstaller packt die Dateien in _MEIPASS
         return os.path.join(sys._MEIPASS, relative_path)
@@ -38,42 +120,48 @@ def optimal_distribution(values, quantities, num_players):
     for i, (value, quantity) in enumerate(zip(values, quantities)):
         all_items.extend([(value, i)] * quantity)  # Der Index (i) macht jeden Gegenstand eindeutig
 
-    def calculate_deviation(groups):
-        sums = [sum(value for value, _ in group) for group in groups]
-        return max(sums) - min(sums)
+    # Sortiere alle Items nach Wert (höchster Wert zuerst)
+    all_items.sort(reverse=True, key=lambda x: x[0])
 
-    if len(all_items) < num_players:
-        return [[] for _ in range(num_players)], [0] * num_players, 0
+    # Initialisiere die Gruppen
+    groups = [[] for _ in range(num_players)]
+    group_sums = [0] * num_players
 
-    best_combination = None
-    best_deviation = float('inf')
+    # Verteile die Items so gleichmäßig wie möglich
+    for item in all_items:
+        # Finde die Gruppe mit der kleinsten Summe
+        min_group_index = group_sums.index(min(group_sums))
+        groups[min_group_index].append(item)
+        group_sums[min_group_index] += item[0]
 
-    # Erzeuge alle möglichen Gruppierungen
-    for split_indices in combinations(range(len(all_items) + num_players - 1), num_players - 1):
-        split_indices = [0] + [x + 1 for x in split_indices] + [len(all_items)]
-        groups = [all_items[split_indices[i]:split_indices[i + 1]] for i in range(num_players)]
-        deviation = calculate_deviation(groups)
-        if deviation < best_deviation:
-            best_combination = groups
-            best_deviation = deviation
+    # Berechne die Abweichung
+    deviation = max(group_sums) - min(group_sums)
 
-    # Extrahiere die Summen jeder Gruppe
-    group_sums = [sum(value for value, _ in group) for group in best_combination]
-
-    return best_combination, group_sums, best_deviation
-
+    return groups, group_sums, deviation
 
 def update_player_labels():
     """Aktualisiert die Anzeige der Spielernamen und Punktzahlen."""
     for i, frame in enumerate(player_frames):
         if i < len(player_names):
+            # Leere den Frame, bevor neue Widgets hinzugefügt werden
             for widget in frame.winfo_children():
                 widget.destroy()
 
-            tk.Label(frame, text=f"{player_names[i]}: {player_totals[i]}", anchor="w").pack(side="left")
+            # Stelle sicher, dass es drei Spalten gibt
+            frame.grid_columnconfigure(0, weight=1, uniform="equal")  # Spalte für den Spielernamen
+            frame.grid_columnconfigure(1, weight=1, uniform="equal")  # Spalte für die Punktzahl
+            frame.grid_columnconfigure(2, weight=1, uniform="equal")  # Spalte für den Bearbeiten-Button
 
+            # Der Spielername wird in der ersten Spalte platziert
+            tk.Label(frame, text=f"{player_names[i]}", anchor="w").grid(row=0, column=0, sticky="w", padx=5)
+
+            # Die Punktzahl wird in der zweiten Spalte platziert
+            tk.Label(frame, text=f"{player_totals[i]} Punkte", anchor="w").grid(row=0, column=1, sticky="w", padx=5)
+
+            # Der Bearbeiten-Button wird in der dritten Spalte platziert
             edit_button = ttk.Button(frame, text="Bearbeiten", command=lambda idx=i: edit_player_name(idx))
-            edit_button.pack(side="right")
+            edit_button.grid(row=0, column=2, padx=5)
+
         else:
             for widget in frame.winfo_children():
                 widget.destroy()
@@ -106,7 +194,6 @@ def add_player():
         player_totals.append(0)
         update_player_labels()
 
-
 def remove_player():
     """Entfernt den letzten Spieler."""
     if len(player_names) > min_players:
@@ -114,12 +201,10 @@ def remove_player():
         player_totals.pop()
         update_player_labels()
 
-
 def change_quantity(index, delta):
     """Ändert die Menge eines Gegenstands."""
     quantities[index] = max(0, quantities[index] + delta)
     quantity_labels[index].config(text=str(quantities[index]))
-
 
 def calculate():
     """Berechnet die optimale Verteilung der Gegenstände und ordnet sie den Spielern zu."""
@@ -173,8 +258,6 @@ def calculate():
         quantities[i] = 0
         quantity_labels[i].config(text="0")
 
-
-
 def reset():
     """Setzt das Programm auf den Ursprung zurück (außer den Spielernamen)."""
     global quantities, player_totals
@@ -188,14 +271,38 @@ def reset():
 
     result_label.config(text="")
 
-
 root = tk.Tk()
 icon_path = get_resource_path("deinicon.ico")
 root.iconbitmap(icon_path)
 root.title("AP Verteilung")
+root.geometry("1300x600")
 
-top_frame = tk.Frame(root)
+# Canvas und Scrollbar einrichten
+canvas = tk.Canvas(root)
+vertical_scrollbar = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
+canvas.configure(yscrollcommand=vertical_scrollbar.set)
+
+canvas.pack(side="left", fill="both", expand=True)
+vertical_scrollbar.pack(side="right", fill="y")
+
+scrollable_frame = tk.Frame(canvas)
+
+scrollable_frame.bind(
+    "<Configure>",
+    lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+)
+
+canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+# Erstelle UI-Elemente im scrollbaren Bereich
+top_frame = tk.Frame(scrollable_frame)
 top_frame.pack(side="top", fill="x", padx=10, pady=10)
+
+
+
+
+optimal_distribution_frame = tk.Frame(scrollable_frame)
+optimal_distribution_frame.pack(side="right", fill="x", padx=10, pady=10)
 
 btn_add_player = ttk.Button(top_frame, text="Spieler hinzufügen", command=add_player)
 btn_add_player.pack(side="left", padx=5)
@@ -203,10 +310,11 @@ btn_add_player.pack(side="left", padx=5)
 btn_remove_player = ttk.Button(top_frame, text="Spieler entfernen", command=remove_player)
 btn_remove_player.pack(side="left", padx=5)
 
-player_frame = tk.Frame(root)
+player_frame = tk.Frame(scrollable_frame)
 player_frame.pack(fill="x", padx=10, pady=10)
 
-player_frames = []
+player_frames = []  # Make sure this is defined before use
+
 for i in range(max_players):
     frame = tk.Frame(player_frame)
     frame.pack(fill="x", pady=2)
@@ -214,18 +322,26 @@ for i in range(max_players):
 
 update_player_labels()
 
-left_frame = tk.Frame(root)
+left_frame = tk.Frame(scrollable_frame)
 left_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
-right_frame = tk.Frame(root)
+right_frame = tk.Frame(scrollable_frame)
 right_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
 
 quantity_labels = []
-for category, items in categories.items():
-    frame = tk.LabelFrame(left_frame, text=category)
-    frame.pack(fill="x", padx=5, pady=5)
 
-    for i, (name, value) in enumerate(items):
+# Anordnung der Kategorien in 2er Blöcken
+category_frames = []
+for i, (category, items) in enumerate(categories.items()):
+    if i % 2 == 0:
+        row_frame = tk.Frame(left_frame)
+        row_frame.pack(fill="x", padx=5, pady=5)
+        category_frames.append(row_frame)
+
+    frame = tk.LabelFrame(category_frames[-1], text=category)
+    frame.pack(side="left", fill="x", padx=5, pady=5)
+
+    for j, (name, value) in enumerate(items):
         item_frame = tk.Frame(frame)
         item_frame.pack(anchor="w", pady=2)
 
@@ -248,5 +364,11 @@ btn_reset.pack(pady=10)
 
 result_label = tk.Label(right_frame, text="", anchor="nw", justify="left")
 result_label.pack(fill="both", expand=True)
+
+# Scrollen mit dem Mausrad aktivieren
+def on_mouse_wheel(event):
+    canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+root.bind_all("<MouseWheel>", on_mouse_wheel)
 
 root.mainloop()
