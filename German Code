@@ -5,44 +5,6 @@ from collections import Counter
 import sys
 import os
 
-# Sprachtexte mit Item-Namen
-texts = {
-    "de": {
-        "add_player": "Spieler hinzufügen",
-        "remove_player": "Spieler entfernen",
-        "edit_name": "Spielername Bearbeiten",
-        "edit_button": "Bearbeiten",
-        "new_name": "Neuer Spielername:",
-        "save": "Speichern",
-        "calculate": "Berechnen",
-        "reset": "Reset",
-        "result": "Optimale Verteilung:",
-        "items": {
-            "Ikone": ["Geringe uralte Ikone", "Normale uralte Ikone", "Große uralte Ikone", "Mächtige uralte Ikone"],
-            "Siegel": ["Geringes uraltes Siegel", "Normales uraltes Siegel", "Großes uraltes Siegel", "Mächtiges uraltes Siegel"],
-            "Kelch": ["Geringer uralter Kelch", "Normaler uralter Kelch", "Großer uralter Kelch", "Mächtiger uralter Kelch"],
-            "Krone": ["Geringe uralte Krone", "Normale uralte Krone", "Große uralte Krone", "Mächtige uralte Krone"]
-        }
-    },
-    "en": {
-        "add_player": "Add Player",
-        "remove_player": "Remove Player",
-        "edit_name": "Edit Player Name",
-        "edit_button": "Edit",
-        "new_name": "New Player Name:",
-        "save": "Save",
-        "calculate": "Calculate",
-        "reset": "Reset",
-        "result": "Optimal Distribution:",
-        "items": {
-            "Ikone": ["Minor Ancient Icon", "Normal Ancient Icon", "Large Ancient Icon", "Powerful Ancient Icon"],
-            "Siegel": ["Minor Ancient Seal", "Normal Ancient Seal", "Large Ancient Seal", "Powerful Ancient Seal"],
-            "Kelch": ["Minor Ancient Chalice", "Normal Ancient Chalice", "Large Ancient Chalice", "Powerful Ancient Chalice"],
-            "Krone": ["Minor Ancient Crown", "Normal Ancient Crown", "Large Ancient Crown", "Powerful Ancient Crown"]
-        }
-    }
-}
-
 
 # Kategorien mit Werten
 categories = {
