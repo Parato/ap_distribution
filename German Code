@@ -89,7 +89,9 @@ def edit_player_name(index):
         edit_window.destroy()
 
     edit_window = tk.Toplevel(root)
-    edit_window.title("Spielername bearbeiten")
+    edit_window.title("Spielername Bearbeiten")
+    edit_window.iconbitmap(get_resource_path("deinicon.ico"))
+    edit_window.geometry("320x150")
     tk.Label(edit_window, text="Neuer Spielername:").pack(padx=10, pady=5)
     entry = ttk.Entry(edit_window)
     entry.insert(0, player_names[index])
