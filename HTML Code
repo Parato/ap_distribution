@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="app-title">AP Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        document.documentElement.classList.add('no-transition');
+
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark-mode');
+            } else {
+                document.documentElement.classList.add('dark-mode');
+            }
+        })();
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body * {
+            transition: color 0.3s ease, background-color 0.3s ease;
+        }
+
+        html.no-transition *,
+        html.no-transition *:before,
+        html.no-transition *:after {
+            transition: none !important;
+        }
+
+        html.dark-mode body {
+             background-color: #1a202c;
+             color: #e2e8f0;
+        }
+
+        html.dark-mode .container {
+            background-color: #2d3748;
+            color: #e2e8f0;
+        }
+
+        html.dark-mode .strike-through {
+            text-decoration: line-through;
+            color: #a0aec0;
+        }
+
+        html.dark-mode .quantity-input {
+             background-color: #4a5568;
+             border-color: #a0aec0;
+             color: #e2e8f0;
+        }
+
+        .container {
+            background-color: #ffffff;
+            transition: background-color 0.3s ease;
+        }
+
+        .strike-through {
+            text-decoration: line-through;
+            color: #888;
+        }
+
+        .quantity-input {
+             box-shadow: inset 0 1px 3px 0 rgba(0, 0, 0, 0.1), inset 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+             -moz-appearance: textfield;
+             appearance: textfield;
+             background-color: #ffffff;
+             border-color: #d2d6dc;
+             color: #333;
+        }
+
+        .quantity-input::-webkit-outer-spin-button,
+        .quantity-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        html.dark-mode ::-webkit-scrollbar-track {
+            background: #4a5568;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        html.dark-mode ::-webkit-scrollbar-thumb {
+            background: #a0aec0;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        html.dark-mode ::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e0;
+        }
+
+        .item-label {
+            flex-grow: 1;
+            margin-right: 0.5rem;
+        }
+
+        .item-subframe-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .player-display-grid {
+             display: grid;
+             grid-template-columns: 1fr 40px;
+             gap: 0.5rem;
+             align-items: center;
+        }
+
+        .player-info-box {
+             background-color: #f9fafb;
+             padding: 0.75rem;
+             border-radius: 0.5rem;
+             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+             display: flex;
+             align-items: center;
+             justify-content: space-between;
+             transition: background-color 0.3s ease;
+        }
+        html.dark-mode .player-info-box {
+             background-color: #4a5568;
+        }
+
+        .player-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 10px max-content max-content;
+            align-items: baseline;
+            flex-grow: 1;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        .player-name-col {
+            grid-column: 1;
+            text-align: left;
+            font-weight: 600;
+        }
+
+         .player-spacer-col {
+             grid-column: 2;
+         }
+
+        .player-value-col {
+             grid-column: 3;
+             text-align: right;
+             font-weight: 600;
+             min-width: 60px;
+        }
+
+        .player-ap-col {
+             grid-column: 4;
+             text-align: left;
+             font-weight: 600;
+             margin-left: 5px;
+        }
+
+        .remove-player-button-outside {
+             background-color: #fecaca;
+             color: #b91c1c;
+             font-weight: bold;
+             width: 1.5rem;
+             height: 1.5rem;
+             border-radius: 0.25rem;
+             display: flex;
+             align-items: center;
+             justify-content: center;
+             cursor: pointer;
+             transition: background-color 0.15s ease-in-out;
+             align-self: center;
+        }
+        .remove-player-button-outside:hover {
+             background-color: #fca5a5;
+        }
+        html.dark-mode .remove-player-button-outside {
+             background-color: #742a2a;
+             color: #fbd38d;
+        }
+        html.dark-mode .remove-player-button-outside:hover {
+             background-color: #9b2c2c;
+        }
+
+        .category-info-icon {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            fill: #3b82f6;
+            cursor: help;
+            width: 1.25rem;
+            height: 1.25rem;
+            z-index: 20;
+            transition: fill 0.2s ease;
+        }
+        html.dark-mode .category-info-icon {
+            fill: #63b3ed;
+        }
+        .category-info-icon:hover {
+             fill: #1e40af;
+        }
+        html.dark-mode .category-info-icon:hover {
+             fill: #90cdf4;
+        }
+
+        .custom-tooltip {
+            position: fixed;
+            text-align: left;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            background: #e0f2f7;
+            color: #333;
+            border: 1px solid #b2ebf2;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            display: block;
+            word-break: normal;
+            overflow-wrap: normal;
+            min-width: 150px;
+            max-width: 300px;
+        }
+        html.dark-mode .custom-tooltip {
+             background: #2a4365;
+             color: #e2e8f0;
+             border-color: #4299e1;
+        }
+
+        html.dark-mode .md\:w-1\/3 {
+            background-color: #2d3748;
+        }
+
+        html.dark-mode .text-gray-600 {
+            color: #a0aec0;
+        }
+
+        html.dark-mode .border-gray-300 {
+            border-color: #4a5568;
+        }
+
+        html.dark-mode .border-gray-200 {
+            border-color: #4a5568;
+        }
+
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            margin-right: 1rem;
+        }
+
+        .theme-switch {
+            display: inline-block;
+            height: 20px;
+            position: relative;
+            width: 36px;
+            margin: 0 0.5rem;
+        }
+
+        .theme-switch input {
+            display:none;
+        }
+
+        .slider {
+            background-color: #ccc;
+            bottom: 0;
+            cursor: pointer;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            background-color: #fff;
+            bottom: 2px;
+            content: "";
+            height: 16px;
+            left: 2px;
+            position: absolute;
+            transition: .4s;
+            width: 16px;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(16px);
+        }
+
+        html.dark-mode #language-select {
+            background-color: #4a5568;
+            border-color: #a0aec0;
+            color: #e2e8f0;
+        }
+
+        html.dark-mode #language-select option {
+             background-color: #4a5568;
+             color: #e2e8f0;
+        }
+
+        html.dark-mode .text-gray-700 {
+             color: #cbd5e0;
+        }
+
+        .add-player-button-container {
+            display: grid;
+            grid-template-columns: 1fr 40px;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .add-player-button-container button {
+            grid-column: 1 / 2;
+            width: 100%;
+        }
+
+        .theme-switch-wrapper .text-sm {
+            color: #718096;
+        }
+         html.dark-mode .theme-switch-wrapper .text-sm {
+             color: #d1d5db;
+         }
+
+        .info-text-container {
+            display: grid;
+            grid-template-columns: max-content max-content max-content max-content;
+            gap: 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            padding: 0;
+            width: max-content;
+        }
+
+        html.dark-mode .info-text-container {
+             color: #e2e8f0;
+        }
+
+        .info-item {
+            grid-column: 1;
+            text-align: left;
+        }
+
+        .info-equals {
+            grid-column: 2;
+            text-align: center;
+        }
+
+        .info-ap-value {
+             grid-column: 3;
+             text-align: right;
+        }
+
+        .info-ap-text {
+             grid-column: 4;
+             text-align: left;
+        }
+    </style>
+</head>
+<body class="p-6">
+
+    <div class="container mx-auto bg-white rounded-xl shadow-lg overflow-hidden md:flex">
+
+        <div class="md:w-2/3 p-8">
+            <div class="flex justify-between items-center mb-6">
+                <div class="theme-switch-wrapper">
+                    <span class="text-sm">Light</span>
+                    <label class="theme-switch" for="checkbox">
+                        <input type="checkbox" id="checkbox" />
+                        <div class="slider round"></div>
+                    </label>
+                    <span class="text-sm dark:text-gray-300">Dark</span>
+                </div>
+                <h1 id="main-title" class="text-2xl font-bold text-center flex-grow">AP Verteilung</h1>
+
+                 <div class="relative inline-block text-left ml-4">
+                     <select id="language-select" class="block appearance-none w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline text-sm">
+                         <option value="de">German</option>
+                         <option value="en">English</option>
+                     </select>
+                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                         <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                     </div>
+                 </div>
+            </div>
+
+            <div id="item-categories" class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                </div>
+
+            <div class="flex justify-between mb-6">
+                <button id="reset-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg shadow">
+                    Zurücksetzen
+                </button>
+                <button id="calculate-button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow">
+                    Berechnen
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <h2 id="players-title" class="text-xl font-semibold mb-4">Spieler</h2>
+                <div class="add-player-button-container">
+                    <button id="add-player-button" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow">
+                        Spieler hinzufügen
+                    </button>
+                    <div></div>
+                </div>
+                <div id="player-display" class="player-display-grid">
+                    </div>
+            </div>
+        </div>
+
+        <div class="md:w-1/3 p-8 bg-gray-100">
+            <h2 id="optimal-distribution-title" class="text-xl font-semibold mb-4 text-center">Optimale Verteilung</h2>
+            <div id="optimal-distribution-results" class="space-y-4">
+                <p id="initial-message" class="text-center text-gray-600 italic">Bereit für die nächste Runde.</p>
+            </div>
+            </div>
+
+    </div>
+
+    <script>
+        (function() {
+            const languageStrings = {
+                de: {
+                    title: "AP Verteilung",
+                    itemCategoriesTitle: "Item Kategorien",
+                    resetButton: "Zurücksetzen",
+                    calculateButton: "Berechnen",
+                    playersTitle: "Spieler",
+                    addPlayerButton: "Spieler hinzufügen",
+                    optimalDistributionTitle: "Optimale Verteilung",
+                    readyMessage: "Bereit für die nächste Runde.",
+                    addPlayerMessage: "Bitte fügen Sie Spieler hinzu.",
+                    noItemsMessage: "Keine Items zum Verteilen eingegeben.",
+                    distributionErrorMessage: "Fehler: Items konnten nicht verteilt werden.",
+                    receivedPoints: "→ Erhalten: ",
+                    nothingReceived: "→ Nichts erhalten in dieser Runde.",
+                    maxPlayersReached: (max) => `Die maximale Spielerzahl von ${max} wurde erreicht.`,
+                    minPlayersRequired: (min) => `Es müssen mindestens ${min} Spieler vorhanden sein.`,
+                    editPlayerNamePrompt: "Neuer Spielername:",
+                    removePlayerIcon: "Entfernen",
+                    abyssPoints: "AP",
+                     deviation: "Abweichung",
+                     categoryTranslations: {
+                        "Ikone": "Ikone",
+                        "Siegel": "Siegel",
+                        "Kelch": "Kelch",
+                        "Krone": "Krone",
+                    },
+                    itemTranslations: {
+                        "Ikone": ["Geringe uralte Ikone", "Normale uralte Ikone", "Große uralte Ikone", "Mächtige uralte Ikone"],
+                        "Siegel": ["Geringes uraltes Siegel", "Normales uraltes Siegel", "Großes uraltes Siegel", "Mächtiges uraltes Siegel"],
+                        "Kelch": ["Geringer uralter Kelch", "Normaler uralter Kelch", "Großer uralter Kelch", "Mächtiger uralter Kelch"],
+                        "Krone": ["Geringe uralte Krone", "Normale uralte Krone", "Große uralte Krone", "Mächtige uralte Krone"],
+                    },
+                    defaultPlayerNameTemplate: (number) => `Spieler ${number}`
+                },
+                en: {
+                    title: "AP Distribution",
+                    itemCategoriesTitle: "Item Categories",
+                    resetButton: "Reset",
+                    calculateButton: "Calculate",
+                    playersTitle: "Players",
+                    addPlayerButton: "Add Player",
+                    optimalDistributionTitle: "Optimal Distribution",
+                    readyMessage: "Ready for the next round.",
+                    addPlayerMessage: "Please add players.",
+                    noItemsMessage: "No items entered for distribution.",
+                    distributionErrorMessage: "Error: Items could not be distributed.",
+                    receivedPoints: "→ Received: ",
+                    nothingReceived: "→ Nothing received this round.",
+                    maxPlayersReached: (max) => `The maximum number of players (${max}) has been reached.`,
+                    minPlayersRequired: (min) => `At least ${min} players are required.`,
+                    editPlayerNamePrompt: "New Player Name:",
+                    removePlayerIcon: "Remove",
+                    abyssPoints: "AP",
+                    deviation: "Difference",
+                    categoryTranslations: {
+                        "Ikone": "Icon",
+                        "Siegel": "Seal",
+                        "Kelch": "Goblet",
+                        "Krone": "Crown",
+                    },
+                    itemTranslations: {
+                        "Ikone": ["Lesser Ancient Icon", "Ancient Icon", "Greater Ancient Icon", "Major Ancient Icon"],
+                        "Siegel": ["Lesser Ancient Seal", "Ancient Seal", "Greater Ancient Seal", "Major Ancient Seal"],
+                        "Kelch": ["Lesser Ancient Goblet", "Ancient Goblet", "Greater Ancient Goblet", "Major Ancient Goblet"],
+                        "Krone": ["Lesser Ancient Crown", "Ancient Crown", "Greater Ancient Crown", "Major Ancient Crown"],
+                    },
+                    defaultPlayerNameTemplate: (number) => `Player ${number}`
+                }
+            };
+
+            let currentLanguage = localStorage.getItem('language') || 'de';
+
+            const categories = {
+                "Ikone": [["Geringe uralte Ikone", 450], ["Normale uralte Ikone", 900], ["Große uralte Ikone", 1350], ["Mächtige uralte Ikone", 1800]],
+                "Siegel": [["Geringes uraltes Siegel", 900], ["Normales uraltes Siegel", 1800], ["Großes uraltes Siegel", 2700], ["Mächtiges uraltes Siegel", 3600]],
+                "Kelch": [["Geringer uralter Kelch", 1200], ["Normaler uralter Kelch", 2400], ["Großer uralter Kelch", 3600], ["Mächtiger uralter Kelch", 4800]],
+                "Krone": [["Geringe uralte Krone", 2400], ["Normale uralte Krone", 4800], ["Große uralte Krone", 7200], ["Mächtige uralte Krone", 9600]],
+            };
+
+            let itemNames = [];
+            let values = [];
+            for (const category in categories) {
+                categories[category].forEach(item => {
+                    itemNames.push(item[0]);
+                    values.push(item[1]);
+                });
+            }
+
+            let quantities;
+            const savedQuantities = localStorage.getItem('quantities');
+            if (savedQuantities) {
+                quantities = JSON.parse(savedQuantities);
+            } else {
+                quantities = new Array(itemNames.length).fill(0);
+            }
+
+            let players;
+            const savedPlayers = localStorage.getItem('players');
+            if (savedPlayers) {
+                players = JSON.parse(savedPlayers);
+                 players.forEach(player => {
+                     if (typeof player.isDefault === 'undefined') {
+                         player.isDefault = player.name.startsWith('Spieler ') || player.name.startsWith('Player ');
+                     }
+                 });
+            } else {
+                 players = [
+                     { id: 1, name: "Spieler 1", total: 0, isDefault: true },
+                     { id: 2, name: "Spieler 2", total: 0, isDefault: true },
+                 ];
+            }
+
+            const maxPlayers = 24;
+            const minPlayers = 2;
+            let nextPlayerId = players.length > 0 ? Math.max(...players.map(p => p.id)) + 1 : 1;
+
+            let lastCalculationResults = null;
+
+            let checkedItems = {};
+            const savedCheckedItems = localStorage.getItem('checkedItems');
+            if (savedCheckedItems) {
+                checkedItems = JSON.parse(savedCheckedItems);
+            }
+
+            let tooltipElements = [];
+            let tooltipListeners = new Map();
+            let infoIconListeners = new Map();
+
+            let itemCategoryDOMElements = new Map();
+            let playerDOMElements = new Map();
+            let resultDOMElements = new Map();
+
+            const appTitle = document.getElementById('app-title');
+            const mainTitle = document.getElementById('main-title');
+            const languageSelect = document.getElementById('language-select');
+            const itemCategoriesDiv = document.getElementById('item-categories');
+            const playersTitle = document.getElementById('players-title');
+            const playerDisplayDiv = document.getElementById('player-display');
+            const optimalDistributionTitle = document.getElementById('optimal-distribution-title');
+            const optimalDistributionResultsDiv = document.getElementById('optimal-distribution-results');
+            const initialMessage = document.getElementById('initial-message');
+            const addPlayerButton = document.getElementById('add-player-button');
+            const calculateButton = document.getElementById('calculate-button');
+            const resetButton = document.getElementById('reset-button');
+
+            let themeSwitchCheckbox;
+
+            const getTranslatedItemName = function(originalName, lang) {
+                 const strings = languageStrings[lang];
+                 for (const categoryKey in categories) {
+                     const indexInOriginal = categories[categoryKey].findIndex(item => item[0] === originalName);
+                     if (indexInOriginal !== -1) {
+                         if (strings.itemTranslations[categoryKey] && strings.itemTranslations[categoryKey][indexInOriginal]) {
+                             return strings.itemTranslations[categoryKey][indexInOriginal];
+                         }
+                     }
+                 }
+                 return originalName;
+            };
+
+             const getTranslatedCategoryName = function(originalName, lang) {
+                 const strings = languageStrings[lang];
+                 if (strings.categoryTranslations && strings.categoryTranslations[originalName]) {
+                     return strings.categoryTranslations[originalName];
+                 }
+                 return originalName;
+             };
+
+            const updateTooltipContent = function(tooltipElement, categoryKey, lang) {
+                 const strings = languageStrings[lang];
+                 let tooltipHTMLContent = '<div class="info-text-container">';
+                 categories[categoryKey].forEach((item, j) => {
+                     const originalItemName = item[0];
+                     const itemValue = item[1];
+                     const translatedItemName = getTranslatedItemName(originalItemName, lang);
+                     tooltipHTMLContent += `<div class="info-item">${translatedItemName}</div>`;
+                     tooltipHTMLContent += `<div class="info-equals">=</div>`;
+                     tooltipHTMLContent += `<div class="info-ap-value">${itemValue}</div>`;
+                     tooltipHTMLContent += `<div class="info-ap-text">${strings.abyssPoints}</div>`;
+                 });
+                 tooltipHTMLContent += '</div>';
+                 tooltipElement.innerHTML = tooltipHTMLContent;
+            };
+
+            const renderItemCategories = function() {
+                const strings = languageStrings[currentLanguage];
+                const currentItemTranslations = strings.itemTranslations;
+                const currentCategoryTranslations = strings.categoryTranslations;
+
+                const existingCategoryFrames = itemCategoriesDiv.querySelectorAll('.border.border-gray-300.rounded-lg');
+
+                existingCategoryFrames.forEach(frame => {
+                    const infoIcon = frame.querySelector('.category-info-icon');
+                    if (infoIcon) {
+                        const listeners = infoIconListeners.get(infoIcon);
+                        if (listeners) {
+                            infoIcon.removeEventListener('mouseover', listeners.mouseover);
+                            infoIcon.removeEventListener('mouseout', listeners.mouseout);
+                            infoIconListeners.delete(infoIcon);
+                        }
+                    }
+                });
+
+                tooltipElements.forEach(tooltip => {
+                    if (tooltip.parentNode) {
+                        const tooltipListener = tooltipListeners.get(tooltip);
+                        if(tooltipListener) {
+                            tooltip.removeEventListener('mouseover', tooltipListener.mouseover);
+                            tooltip.removeEventListener('mouseout', tooltipListener.mouseout);
+                            tooltipListeners.delete(tooltip);
+                        }
+                        tooltip.parentNode.removeChild(tooltip);
+                    }
+                });
+                tooltipElements = [];
+
+                 itemCategoriesDiv.innerHTML = '';
+
+                let itemIndex = 0;
+
+                for (const categoryKey in categories) {
+                    const translatedCategoryName = getTranslatedCategoryName(categoryKey, currentLanguage);
+
+                    const categoryFrame = document.createElement('div');
+                    categoryFrame.className = 'border border-gray-300 rounded-lg p-4 shadow-sm relative';
+                    categoryFrame.dataset.originalCategoryName = categoryKey;
+
+                    const h3 = document.createElement('h3');
+                    h3.className = 'text-lg font-semibold mb-3';
+                    h3.textContent = translatedCategoryName;
+                    categoryFrame.appendChild(h3);
+
+                    const infoIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    infoIcon.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+                    infoIcon.setAttribute("viewBox", "0 0 20 20");
+                    infoIcon.classList.add('category-info-icon');
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("fill-rule", "evenodd");
+                    path.setAttribute("d", "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z");
+                    path.setAttribute("clip-rule", "evenodd");
+                    infoIcon.appendChild(path);
+                    categoryFrame.appendChild(infoIcon);
+
+                    const tooltipElement = document.createElement('div');
+                    tooltipElement.classList.add('custom-tooltip');
+                    document.body.appendChild(tooltipElement);
+                    tooltipElements.push(tooltipElement);
+
+                     const showTooltip = () => {
+                         const iconRect = infoIcon.getBoundingClientRect();
+                         tooltipElement.style.top = `${iconRect.bottom - 20}px`;
+                         tooltipElement.style.left = `${iconRect.left + iconRect.width + 15}px`;
+                         tooltipElement.style.transform = 'none';
+                         tooltipElement.style.opacity = '1';
+                         tooltipElement.style.visibility = 'visible';
+                     };
+
+                     const hideTooltip = () => {
+                          tooltipElement.style.opacity = '0';
+                          setTimeout(() => {
+                               if (tooltipElement.style.opacity === '0') {
+                                    tooltipElement.style.visibility = 'hidden';
+                               }
+                          }, 100);
+                     };
+
+                    infoIcon.addEventListener('mouseover', showTooltip);
+                    infoIcon.addEventListener('mouseout', hideTooltip);
+                    tooltipElement.addEventListener('mouseover', () => {
+                        tooltipElement.style.opacity = '1';
+                        tooltipElement.style.visibility = 'visible';
+                    });
+                    tooltipElement.addEventListener('mouseout', hideTooltip);
+
+                     infoIconListeners.set(infoIcon, { mouseover: showTooltip, mouseout: hideTooltip });
+                     tooltipListeners.set(tooltipElement, { mouseover: () => { tooltipElement.style.opacity = '1'; tooltipElement.style.visibility = 'visible'; }, mouseout: hideTooltip });
+
+                    updateTooltipContent(tooltipElement, categoryKey, currentLanguage);
+
+                    categories[categoryKey].forEach((item, j) => {
+                        const originalItemName = item[0];
+                        const itemValue = item[1];
+                        const currentItemIndex = itemNames.indexOf(originalItemName);
+                        const translatedItemName = getTranslatedItemName(originalItemName, currentLanguage);
+
+                        const itemSubframe = document.createElement('div');
+                        itemSubframe.className = 'item-subframe-grid py-1';
+                        itemSubframe.dataset.originalItemName = originalItemName;
+
+                        const itemLabel = document.createElement('span');
+                        itemLabel.className = 'text-sm item-label';
+                        itemLabel.title = `${translatedItemName} (AP: ${itemValue})`;
+                        itemLabel.textContent = `${translatedItemName}:`;
+                        itemSubframe.appendChild(itemLabel);
+
+                        const controlFrame = document.createElement('div');
+                        controlFrame.className = 'flex items-center space-x-1';
+
+                        const minusButton = document.createElement('button');
+                        minusButton.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold w-6 h-6 rounded flex items-center justify-center';
+                        minusButton.textContent = '-';
+                        minusButton.addEventListener('click', () => changeQuantity(currentItemIndex, -1));
+                        controlFrame.appendChild(minusButton);
+
+                        const quantityInput = document.createElement('input');
+                        quantityInput.type = 'number';
+                        quantityInput.id = `quantity-${currentItemIndex}`;
+                        quantityInput.className = 'w-12 text-center border border-gray-300 rounded quantity-input text-sm';
+                        quantityInput.value = quantities[currentItemIndex];
+                        quantityInput.min = "0";
+                        quantityInput.addEventListener('input', (event) => {
+                             const value = parseInt(event.target.value, 10);
+                             if (!isNaN(value) && value >= 0) {
+                                  quantities[currentItemIndex] = value;
+                                  localStorage.setItem('quantities', JSON.stringify(quantities));
+                             } else if (event.target.value === '') {
+                                  quantities[currentItemIndex] = 0;
+                                  localStorage.setItem('quantities', JSON.stringify(quantities));
+                             } else {
+                                  event.target.value = quantities[currentItemIndex];
+                             }
+                        });
+                        controlFrame.appendChild(quantityInput);
+
+                        const plusButton = document.createElement('button');
+                        plusButton.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold w-6 h-6 rounded flex items-center justify-center';
+                        plusButton.textContent = '+';
+                        plusButton.addEventListener('click', () => changeQuantity(currentItemIndex, 1));
+                        controlFrame.appendChild(plusButton);
+
+                        itemSubframe.appendChild(controlFrame);
+                        categoryFrame.appendChild(itemSubframe);
+                    });
+
+                    itemCategoriesDiv.appendChild(categoryFrame);
+                }
+            };
+
+            const renderPlayers = function() {
+                const strings = languageStrings[currentLanguage];
+
+                const existingPlayerElements = playerDisplayDiv.children;
+
+                Array.from(existingPlayerElements).forEach(element => {
+                    if (element.classList.contains('player-info-box')) {
+                    } else if (element.classList.contains('remove-player-button-outside')) {
+                    }
+                });
+
+                 playerDisplayDiv.innerHTML = '';
+
+                const fragment = document.createDocumentFragment();
+
+                players.forEach((player, index) => {
+                    const playerInfoBox = document.createElement('div');
+                    playerInfoBox.className = 'player-info-box';
+                    playerInfoBox.dataset.playerId = player.id;
+
+                    const playerDetailsGrid = document.createElement('div');
+                    playerDetailsGrid.className = 'player-details-grid';
+
+                    const playerNameCol = document.createElement('span');
+                    playerNameCol.className = 'player-name-col';
+                    playerNameCol.textContent = `${player.name}:`;
+                    playerDetailsGrid.appendChild(playerNameCol);
+
+                    const playerSpacerCol = document.createElement('div');
+                    playerSpacerCol.className = 'player-spacer-col';
+                    playerDetailsGrid.appendChild(playerSpacerCol);
+
+                    const playerValueCol = document.createElement('span');
+                    playerValueCol.className = 'player-value-col';
+                    playerValueCol.textContent = player.total;
+                    playerDetailsGrid.appendChild(playerValueCol);
+
+                    const playerAPCol = document.createElement('span');
+                    playerAPCol.className = 'player-ap-col';
+                    playerAPCol.textContent = strings.abyssPoints;
+                    playerDetailsGrid.appendChild(playerAPCol);
+
+                    playerInfoBox.appendChild(playerDetailsGrid);
+
+                    const editButton = document.createElement('button');
+                    editButton.className = 'bg-blue-200 hover:bg-blue-300 text-blue-800 text-xs font-bold py-1 px-3 rounded-lg ml-4';
+                    editButton.textContent = strings.editPlayerNamePrompt.replace(':', '');
+                    editButton.addEventListener('click', () => editPlayerName(index));
+                    playerInfoBox.appendChild(editButton);
+
+                    fragment.appendChild(playerInfoBox);
+
+                    if (index >= minPlayers) {
+                        const removeButton = document.createElement('button');
+                        removeButton.className = 'remove-player-button-outside';
+                        removeButton.textContent = 'X';
+                        removeButton.title = strings.removePlayerIcon;
+                        removeButton.dataset.playerIndex = index;
+                        removeButton.addEventListener('click', (event) => {
+                            const clickedIndex = parseInt(event.target.dataset.playerIndex, 10);
+                            removePlayerByIndex(clickedIndex);
+                        });
+                        fragment.appendChild(removeButton);
+                    } else {
+                         const emptyCell = document.createElement('div');
+                         fragment.appendChild(emptyCell);
+                    }
+                });
+
+                playerDisplayDiv.appendChild(fragment);
+                 localStorage.setItem('players', JSON.stringify(players));
+            };
+
+            const changeQuantity = function(index, delta) {
+                quantities[index] = Math.max(0, quantities[index] + delta);
+                const quantityInput = document.getElementById(`quantity-${index}`);
+                if (quantityInput) {
+                     quantityInput.value = quantities[index];
+                }
+                localStorage.setItem('quantities', JSON.stringify(quantities));
+            };
+
+            const editPlayerName = function(index) {
+                const strings = languageStrings[currentLanguage];
+                const player = players[index];
+                if (!player) return;
+
+                const newName = prompt(strings.editPlayerNamePrompt, player.name);
+                if (newName !== null && newName.trim() !== "") {
+                    player.name = newName.trim();
+                    player.isDefault = false;
+                    renderPlayers();
+
+                    const playerHeaderFrameInResults = optimalDistributionResultsDiv.querySelector(`.player-header-frame[data-player-id="${player.id}"]`);
+                    if (playerHeaderFrameInResults) {
+                        const playerNameElementInResults = playerHeaderFrameInResults.querySelector('.player-name-label');
+                        if (playerNameElementInResults) {
+                            playerNameElementInResults.textContent = `${player.name}:`;
+                        }
+                    }
+                     localStorage.setItem('players', JSON.stringify(players));
+                }
+            };
+
+             const removePlayerByIndex = function(index) {
+                 const strings = languageStrings[currentLanguage];
+                 if (players.length > minPlayers) {
+                     if (index >= 0 && index < players.length) {
+                         const removedPlayerId = players[index].id;
+
+                         players.splice(index, 1);
+
+                         renderPlayers();
+
+                         optimalDistributionResultsDiv.innerHTML = `<p id="initial-message" class="text-center text-gray-600 italic">${strings.readyMessage}</p>`;
+                         lastCalculationResults = null;
+
+                         for (const key in checkedItems) {
+                             if (key.startsWith(`item-${removedPlayerId}-`)) {
+                                 delete checkedItems[key];
+                             }
+                         }
+                         localStorage.setItem('checkedItems', JSON.stringify(checkedItems));
+
+                         localStorage.setItem('players', JSON.stringify(players));
+                     } else {
+                         console.error("Invalid index for player removal:", index);
+                     }
+                 } else {
+                     alert(strings.minPlayersRequired(minPlayers));
+                 }
+             };
+
+            const addPlayer = function() {
+                const strings = languageStrings[currentLanguage];
+                if (players.length < maxPlayers) {
+                    const newPlayer = {
+                        id: nextPlayerId++,
+                        name: strings.defaultPlayerNameTemplate(players.length + 1),
+                        total: 0,
+                        isDefault: true
+                    };
+                    players.push(newPlayer);
+                    renderPlayers();
+                     localStorage.setItem('players', JSON.stringify(players));
+                } else {
+                    alert(strings.maxPlayersReached(maxPlayers));
+                }
+            };
+
+            const optimalDistribution = function(values, quantities, numPlayers) {
+                let allItems = [];
+                for (let i = 0; i < values.length; i++) {
+                    for (let j = 0; j < quantities[i]; j++) {
+                        allItems.push({ value: values[i], index: i });
+                    }
+                }
+
+                allItems.sort((a, b) => b.value - a.value);
+
+                let groups = new Array(numPlayers).fill(null).map(() => []);
+                let groupSums = new Array(numPlayers).fill(0);
+
+                if (numPlayers > 0) {
+                    allItems.forEach(item => {
+                        let minSum = Infinity;
+                        let minGroupIndex = 0;
+                        for (let idx = 0; idx < groupSums.length; idx++) {
+                            if (groupSums[idx] < minSum) {
+                                minSum = groupSums[idx];
+                                minGroupIndex = idx;
+                            }
+                        }
+                        groups[minGroupIndex].push(item);
+                        groupSums[minGroupIndex] += item.value;
+                    });
+                }
+
+                let deviation = 0;
+                if (groupSums.length > 1) {
+                    deviation = Math.max(...groupSums) - Math.min(...groupSums);
+                }
+
+                return { groups, groupSums, deviation, assignedPlayerIndices: [] };
+            };
+
+            const calculate = function() {
+                const numPlayers = players.length;
+                optimalDistributionResultsDiv.innerHTML = '';
+                const strings = languageStrings[currentLanguage];
+
+                if (numPlayers < minPlayers) {
+                     optimalDistributionResultsDiv.innerHTML = `<p class="text-center text-gray-600 italic">${strings.minPlayersRequired(minPlayers)}</p>`;
+                     lastCalculationResults = null;
+                     return;
+                }
+
+                const totalQuantity = quantities.reduce((sum, q) => sum + q, 0);
+                if (totalQuantity === 0) {
+                     optimalDistributionResultsDiv.innerHTML = `<p class="text-center text-gray-600 italic">${strings.noItemsMessage}</p>`;
+                     lastCalculationResults = null;
+                     return;
+                }
+
+                const { groups, groupSums, deviation } = optimalDistribution(values, quantities, numPlayers);
+
+                const playerOrder = players
+                    .map((player, index) => ({ total: player.total, originalPlayerIndex: index }))
+                    .sort((a, b) => a.total - b.total);
+
+                const groupOrder = groupSums
+                    .map((sum, index) => ({ sum, originalGroupIndex: index }))
+                    .sort((a, b) => b.sum - a.sum);
+
+                const assignment = new Array(numPlayers).fill(null);
+                const finalGroupSums = new Array(numPlayers).fill(0);
+                const assignedPlayerIndices = new Array(numPlayers).fill(null);
+
+                const numAssignments = Math.min(playerOrder.length, groupOrder.length);
+
+                for (let i = 0; i < numAssignments; i++) {
+                    const playerInfo = playerOrder[i];
+                    const groupInfo = groupOrder[i];
+
+                    const playerIdx = playerInfo.originalPlayerIndex;
+                    const groupIdx = groupInfo.originalGroupIndex;
+
+                    assignment[playerIdx] = groupIdx;
+                    finalGroupSums[playerIdx] = groupSums[groupIdx];
+                    assignedPlayerIndices[groupIdx] = playerIdx;
+                }
+
+                lastCalculationResults = { groups, groupSums, deviation, assignment, finalGroupSums, assignedPlayerIndices };
+
+                renderResults(lastCalculationResults, strings);
+
+                assignment.forEach((groupIdx, playerIdx) => {
+                     if (groupIdx !== null && groupIdx < groups.length) {
+                         players[playerIdx].total += finalGroupSums[playerIdx];
+                     }
+                });
+
+                renderPlayers();
+
+                quantities.fill(0);
+                itemNames.forEach((_, index) => {
+                     const quantityInput = document.getElementById(`quantity-${index}`);
+                     if (quantityInput) {
+                          quantityInput.value = '0';
+                     }
+                });
+                 localStorage.setItem('quantities', JSON.stringify(quantities));
+            };
+
+            const renderResults = function(results, strings) {
+                 const { groups, deviation, assignment, finalGroupSums } = results;
+
+                 const existingResultElements = optimalDistributionResultsDiv.children;
+
+                 const initialMsg = optimalDistributionResultsDiv.querySelector('#initial-message');
+                 if (initialMsg) {
+                     initialMsg.parentNode.removeChild(initialMsg);
+                 }
+
+                 Array.from(existingResultElements).forEach(element => {
+                     if (element.classList.contains('group-items-frame')) {
+                         const checkboxes = element.querySelectorAll('input[type="checkbox"]');
+                         checkboxes.forEach(checkbox => {
+                         });
+                     }
+                 });
+
+                 optimalDistributionResultsDiv.innerHTML = '';
+
+                 const fragment = document.createDocumentFragment();
+
+                 const resultsTitle = document.createElement('h3');
+                 resultsTitle.className = 'text-lg font-bold mb-3';
+                 resultsTitle.textContent = strings.optimalDistributionTitle + ":";
+                 fragment.appendChild(resultsTitle);
+
+                 let itemsDistributed = false;
+
+                 assignment.forEach((groupIdx, playerIdx) => {
+                      const player = players[playerIdx];
+
+                      const playerHeaderFrame = document.createElement('div');
+                      playerHeaderFrame.className = 'player-header-frame flex items-center mb-2';
+                      playerHeaderFrame.dataset.playerId = player.id;
+
+                      const playerNameLabel = document.createElement('span');
+                      playerNameLabel.className = 'player-name-label font-semibold';
+                      playerNameLabel.textContent = `${player.name}:`;
+                      playerHeaderFrame.appendChild(playerNameLabel);
+
+                      const pointsReceivedLabel = document.createElement('span');
+                      pointsReceivedLabel.className = 'text-sm text-gray-600 ml-4';
+                      playerHeaderFrame.appendChild(pointsReceivedLabel);
+
+                      fragment.appendChild(playerHeaderFrame);
+
+                      if (groupIdx !== null && groupIdx < groups.length && groups[groupIdx].length > 0) {
+                          const group = groups[groupIdx];
+                          const itemCounts = group.reduce((acc, item) => {
+                              const originalItemName = itemNames[item.index];
+                              acc[originalItemName] = (acc[originalItemName] || 0) + 1;
+                              return acc;
+                          }, {});
+
+                          pointsReceivedLabel.textContent = `${strings.receivedPoints}${finalGroupSums[playerIdx]} ${strings.abyssPoints}`;
+                          pointsReceivedLabel.classList.remove('italic');
+
+                          const groupItemsFrame = document.createElement('div');
+                          groupItemsFrame.className = 'group-items-frame border border-gray-200 rounded p-3 space-y-1 mb-4';
+                          fragment.appendChild(groupItemsFrame);
+
+                          itemsDistributed = true;
+
+                          for (const originalItemName in itemCounts) {
+                              const count = itemCounts[originalItemName];
+                              const itemIndex = itemNames.indexOf(originalItemName);
+                              const itemValue = values[itemIndex];
+                              const translatedItemName = getTranslatedItemName(originalItemName, currentLanguage);
+
+                              const itemDisplayFrame = document.createElement('div');
+                              itemDisplayFrame.className = 'flex items-center';
+
+                              const checkbox = document.createElement('input');
+                              checkbox.type = 'checkbox';
+                              checkbox.className = 'mr-2';
+                              const checkboxId = `item-${player.id}-${originalItemName.replace(/\s+/g, '-')}`;
+                              checkbox.id = checkboxId;
+
+                              const label = document.createElement('label');
+                              label.htmlFor = checkbox.id;
+                              label.className = 'text-sm cursor-pointer';
+                              label.dataset.originalItemName = originalItemName;
+                              label.textContent = `${count}x ${translatedItemName} (AP: ${itemValue})`;
+                              label.title = `${translatedItemName} (AP: ${itemValue})`;
+
+                              if (checkedItems[checkboxId]) {
+                                  checkbox.checked = true;
+                                  label.classList.add('strike-through');
+                              }
+
+                              checkbox.addEventListener('change', () => {
+                                   if (checkbox.checked) {
+                                        label.classList.add('strike-through');
+                                        checkedItems[checkboxId] = true;
+                                   } else {
+                                        label.classList.remove('strike-through');
+                                        delete checkedItems[checkboxId];
+                                   }
+                                   localStorage.setItem('checkedItems', JSON.stringify(checkedItems));
+                              });
+
+                             itemDisplayFrame.appendChild(checkbox);
+                             itemDisplayFrame.appendChild(label);
+                             groupItemsFrame.appendChild(itemDisplayFrame);
+                         }
+
+                     } else {
+                          pointsReceivedLabel.className += ' italic';
+                          pointsReceivedLabel.textContent = strings.nothingReceived;
+                     }
+                 });
+
+                  if (itemsDistributed) {
+                       const deviationElement = document.createElement('p');
+                       deviationElement.className = 'text-right font-semibold mt-4';
+                       deviationElement.textContent = `${strings.deviation}: ${deviation} ${strings.abyssPoints}`;
+                       fragment.appendChild(deviationElement);
+                  } else {
+                       const totalQuantity = quantities.reduce((sum, q) => sum + q, 0);
+                       if (totalQuantity > 0) {
+                            const errorMessage = document.createElement('p');
+                            errorMessage.className = 'text-center text-red-600 italic';
+                            errorMessage.textContent = strings.distributionErrorMessage;
+                            fragment.appendChild(errorMessage);
+                       } else {
+                           const initialMsgElement = document.createElement('p');
+                           initialMsgElement.id = 'initial-message';
+                           initialMsgElement.className = 'text-center text-gray-600 italic';
+                           initialMsgElement.textContent = strings.readyMessage;
+                           fragment.appendChild(initialMsgElement);
+                       }
+                  }
+
+                 optimalDistributionResultsDiv.appendChild(fragment);
+            };
+
+            const resetCalculator = function() {
+                quantities.fill(0);
+                localStorage.setItem('quantities', JSON.stringify(quantities));
+                renderItemCategories();
+
+                players.forEach((player) => {
+                    player.total = 0;
+                });
+
+                localStorage.setItem('players', JSON.stringify(players));
+
+                renderPlayers();
+
+                const strings = languageStrings[currentLanguage];
+
+                optimalDistributionResultsDiv.innerHTML = '';
+
+                const initialMsgElement = document.createElement('p');
+                initialMsgElement.id = 'initial-message';
+                initialMsgElement.className = 'text-center text-gray-600 italic';
+                initialMsgElement.textContent = strings.readyMessage;
+                optimalDistributionResultsDiv.appendChild(initialMsgElement);
+
+                lastCalculationResults = null;
+
+                checkedItems = {};
+                localStorage.removeItem('checkedItems');
+            };
+
+            const setTheme = function(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark-mode');
+                    if (themeSwitchCheckbox) themeSwitchCheckbox.checked = true;
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark-mode');
+                     if (themeSwitchCheckbox) themeSwitchCheckbox.checked = false;
+                    localStorage.setItem('theme', 'light');
+                }
+            };
+
+            const toggleTheme = function() {
+                if (document.documentElement.classList.contains('dark-mode')) {
+                    setTheme('light');
+                } else {
+                    setTheme('dark');
+                }
+            };
+
+            const updateLanguageUI = function() {
+                const strings = languageStrings[currentLanguage];
+                appTitle.textContent = strings.title;
+                mainTitle.textContent = strings.title;
+                playersTitle.textContent = strings.playersTitle;
+                optimalDistributionTitle.textContent = strings.optimalDistributionTitle;
+                addPlayerButton.textContent = strings.addPlayerButton;
+                calculateButton.textContent = strings.calculateButton;
+                resetButton.textContent = strings.resetButton;
+
+                players.forEach(player => {
+                    if (player.isDefault) {
+                        const numberMatch = player.name.match(/\d+/);
+                        if (numberMatch) {
+                             const playerNumber = parseInt(numberMatch[0], 10);
+                             player.name = strings.defaultPlayerNameTemplate(playerNumber);
+                        } else {
+                            player.name = `${strings.playersTitle} ${player.id}`;
+                        }
+                    }
+                });
+
+                renderItemCategories();
+                renderPlayers();
+
+                if (lastCalculationResults) {
+                     renderResults(lastCalculationResults, strings);
+                } else {
+                    const currentInitialMessage = optimalDistributionResultsDiv.querySelector('#initial-message');
+                    if (currentInitialMessage) {
+                         currentInitialMessage.textContent = strings.readyMessage;
+                    } else if (optimalDistributionResultsDiv.children.length === 0) {
+                         const initialMsgElement = document.createElement('p');
+                         initialMsgElement.id = 'initial-message';
+                         initialMsgElement.className = 'text-center text-gray-600 italic';
+                         initialMsgElement.textContent = strings.readyMessage;
+                         optimalDistributionResultsDiv.appendChild(initialMsgElement);
+                    }
+                }
+
+                localStorage.setItem('language', currentLanguage);
+            };
+
+            document.addEventListener('DOMContentLoaded', () => {
+                themeSwitchCheckbox = document.getElementById('checkbox');
+
+                if (document.documentElement.classList.contains('dark-mode')) {
+                     if (themeSwitchCheckbox) themeSwitchCheckbox.checked = true;
+                } else {
+                     if (themeSwitchCheckbox) themeSwitchCheckbox.checked = false;
+                }
+
+                document.documentElement.classList.remove('no-transition');
+
+                languageSelect.value = currentLanguage;
+
+                updateLanguageUI();
+
+                languageSelect.addEventListener('change', (event) => {
+                    currentLanguage = event.target.value;
+                    updateLanguageUI();
+                });
+
+                addPlayerButton.addEventListener('click', addPlayer);
+                calculateButton.addEventListener('click', calculate);
+                resetButton.addEventListener('click', resetCalculator);
+
+                if (themeSwitchCheckbox) {
+                     themeSwitchCheckbox.addEventListener('change', toggleTheme);
+                } else {
+                     console.error('Theme switch checkbox element not found!');
+                }
+            });
+        })();
+    </script>
+
+    <div style="position: fixed; bottom: 5px; right: 10px; font-size: 0.75rem; color: #a0aec0;">
+        Made by Parato
+    </div>
+
+</body>
+</html>
